@@ -5,6 +5,7 @@ const K = {
   ebony: '#3a3430', ebonyL: '#5a524a', bark: '#6e4a30', barkL: '#9a6e48', ink: '#2a2a3a', inkL: '#4a4a62', clay: '#8a6a5a', clayL: '#a88a78',
   yak: '#d8cfc0', yakD: '#a89a88', yakL: '#efe8dc', fRed: '#c8382e', fBlue: '#3f6fb5', fGreen: '#3f8a5a', fYellow: '#e0b43a',
   indigo: '#2c3466', indigoL: '#4a5494', gold: '#d8b25a', goldL: '#f0d488', light: '#bfe8ff', lightL: '#eaf8ff',
+  sky: '#9cc8e8', skyD: '#6a9ac0', feather: '#e8e2d4', featherD: '#b8b0a0', ash: '#5a5452', ashL: '#7a7270', pink: '#e8a6b8', pinkD: '#c8869a', stone: '#a8a29a', stoneD: '#7a746c', candle: '#f6ecd0',
   lac: '#a8452a', lacD: '#7a2e1c', lotus: '#e898a8', lotusL: '#f6c8d0', pad: '#4f8a4a', padL: '#7ab06a', cream: '#f1e8d4',
 };
 
@@ -44,6 +45,44 @@ export const HW_FUR = {
     { t: 'ell', x: .44, y: .48, z: .36, rx: 2.4, ry: 1.6, c: K.lotus }, { t: 'ell', x: .56, y: .48, z: .36, rx: 2.4, ry: 1.6, c: K.lotus },
     { t: 'ell', x: .5, y: .44, z: .38, rx: 2.4, ry: 1.6, c: K.lotusL }, { t: 'ell', x: .5, y: .54, z: .36, rx: 2.4, ry: 1.6, c: K.lotus },
     { x: .47, y: .47, w: .06, d: .06, h: .08, z: .38, c: K.cream }, { x: .48, y: .48, w: .04, d: .04, h: .05, z: .46, c: K.emberL }] },
+  hw_pado_perch: { name: '날개 손님 횃대 의자', grade: 2, W: 1, D: 1, layer: 'floor', cat: '좌석·탁자', top: 1.1, parts: [
+    { x: .2, y: .2, w: .6, d: .6, h: .06, c: K.tealD },
+    { x: .46, y: .46, w: .08, d: .08, h: 1.0, z: .06, c: K.bambooD }, { x: .47, y: .47, w: .03, d: .03, h: 1.0, z: .06, c: K.bambooL },
+    { x: .3, y: .44, w: .4, d: .12, h: .06, z: .5, c: K.bamboo },
+    { x: .1, y: .4, w: .8, d: .2, h: .08, z: 1.04, c: K.bamboo }, { x: .1, y: .4, w: .8, d: .04, h: .08, z: 1.04, c: K.bambooL },
+    { x: .14, y: .44, w: .72, d: .12, h: .02, z: 1.12, c: K.teal },
+    { x: .06, y: .46, w: .08, d: .08, h: .14, z: 1.12, c: K.feather }, { x: .86, y: .46, w: .08, d: .08, h: .14, z: 1.12, c: K.feather },
+    { x: .3, y: .3, w: .4, d: .4, h: .02, z: .07, c: K.teal }] },
+  hw_bulssi_brazier_table: { name: '불꽃 손님 화로 상', grade: 3, W: 2, D: 1, layer: 'floor', cat: '좌석·탁자', top: .36, parts: [
+    { x: .1, y: .12, w: .12, d: .12, h: .3, c: K.ironD }, { x: 1.78, y: .12, w: .12, d: .12, h: .3, c: K.ironD },
+    { x: .1, y: .76, w: .12, d: .12, h: .3, c: K.ironD }, { x: 1.78, y: .76, w: .12, d: .12, h: .3, c: K.ironD },
+    { x: .04, y: .06, w: 1.92, d: .88, h: .06, z: .3, c: K.glass }, { x: .04, y: .06, w: 1.92, d: .04, h: .06, z: .3, c: K.glassG },
+    { x: .74, y: .3, w: .52, d: .4, h: .04, z: .36, c: K.ironD }, { x: .8, y: .34, w: .4, d: .32, h: .02, z: .38, c: K.ember },
+    { x: .88, y: .4, w: .24, d: .2, h: .06, z: .4, c: K.emberL }, { x: .96, y: .44, w: .08, d: .1, h: .1, z: .44, c: '#fff4c8' },
+    { t: 'ell', x: .34, y: .5, z: .38, rx: 5, ry: 3, c: K.iron }, { t: 'ell', x: .34, y: .5, z: .4, rx: 3, ry: 2, c: K.fRed },
+    { t: 'ell', x: 1.64, y: .5, z: .38, rx: 5, ry: 3, c: K.iron }, { t: 'ell', x: 1.64, y: .5, z: .4, rx: 3, ry: 2, c: K.fYellow }] },
+  hw_jaebit_dream_basin: { name: '꿈 비치는 먹비 수반', grade: 3, W: 1, D: 1, layer: 'floor', cat: '장식', parts: [
+    { x: .26, y: .26, w: .48, d: .48, h: .34, c: K.ebony }, { x: .26, y: .26, w: .48, d: .04, h: .34, c: K.ebonyL },
+    { x: .14, y: .14, w: .72, d: .72, h: .1, z: .34, c: K.ebony }, { x: .14, y: .14, w: .72, d: .72, h: .02, z: .44, c: K.ebonyL },
+    { x: .2, y: .2, w: .6, d: .6, h: .02, z: .45, c: K.ink },
+    { t: 'ell', x: .42, y: .44, z: .48, rx: 4, ry: 2, c: K.inkL }, { t: 'ell', x: .56, y: .58, z: .48, rx: 3, ry: 1.5, c: '#8a8ab8' },
+    { t: 'ell', x: .5, y: .36, z: .48, rx: 2, ry: 1, c: '#c8c8f0' },
+    { x: .78, y: .2, w: .06, d: .06, h: .5, z: .44, c: K.bamboo }, { x: .6, y: .14, w: .3, d: .14, h: .02, z: .92, c: K.leafL }] },
+  hw_nunmaru_farewell: { name: '두 번째 배웅 상', grade: 3, W: 2, D: 1, layer: 'floor', cat: '좌석·탁자', top: .3, parts: [
+    { x: .06, y: .1, w: 1.88, d: .8, h: .24, c: K.stoneD }, { x: .04, y: .08, w: 1.92, d: .84, h: .06, z: .24, c: K.stone },
+    { x: .04, y: .08, w: 1.92, d: .04, h: .06, z: .24, c: K.yakL },
+    { x: .1, y: .14, w: 1.8, d: .1, h: .02, z: .3, c: K.fBlue }, { x: .1, y: .76, w: 1.8, d: .1, h: .02, z: .3, c: K.fYellow },
+    { t: 'ell', x: .4, y: .5, z: .32, rx: 5, ry: 3, c: K.clay }, { t: 'ell', x: .4, y: .5, z: .35, rx: 4, ry: 2, c: K.cream },
+    { t: 'ell', x: .9, y: .5, z: .32, rx: 4, ry: 3, c: K.yak }, { t: 'ell', x: .86, y: .46, z: .36, rx: 2, ry: 1.5, c: K.yakL },
+    { x: 1.3, y: .4, w: .14, d: .14, h: .2, z: .3, c: K.candle }, { x: 1.35, y: .45, w: .04, d: .04, h: .06, z: .5, c: K.emberL },
+    { x: 1.56, y: .34, w: .24, d: .32, h: .3, z: .3, c: K.bark }, { x: 1.58, y: .36, w: .2, d: .28, h: .02, z: .6, c: K.fRed }] },
+  hw_haeoreum_lamp_tower: { name: '아침에 끄는 연꽃 등탑', grade: 2, W: 1, D: 1, layer: 'floor', cat: '조명', parts: [
+    { x: .2, y: .2, w: .6, d: .6, h: .12, c: K.stoneD }, { x: .26, y: .26, w: .48, d: .48, h: .2, z: .12, c: K.stone },
+    { x: .3, y: .3, w: .4, d: .4, h: .18, z: .32, c: K.lac }, { x: .38, y: .38, w: .24, d: .24, h: .1, z: .36, c: K.emberL },
+    { x: .26, y: .26, w: .48, d: .48, h: .04, z: .5, c: K.gold },
+    { x: .34, y: .34, w: .32, d: .32, h: .14, z: .54, c: K.lac }, { x: .3, y: .3, w: .4, d: .4, h: .04, z: .68, c: K.gold },
+    { t: 'ell', x: .5, y: .5, z: .74, rx: 4, ry: 2, c: K.lotus }, { t: 'ell', x: .5, y: .5, z: .78, rx: 2, ry: 1, c: K.lotusL },
+    { x: .48, y: .48, w: .04, d: .04, h: .14, z: .8, c: K.gold }] },
 };
 
 export const HW_WALL = {
@@ -64,4 +103,10 @@ export const HW_WALL = {
     [.34, 12, .22, 5, K.goldL], [.4, 13, .1, 3, '#ffffff'],
     [.12, 5.6, .66, 2.4, K.indigo], [.12, 5.6, .66, .6, K.gold],
     [.4, 2, .1, 3.6, K.gold], [.32, 0, .26, 2, K.lotus], [.38, .4, .14, 1, K.lotusL]] },
+  hw_dalmaji_moon_scroll: { name: '보름 달맞이 족자', grade: 2, kind: 'deco', cat: '장식', w: 1, h: 36, rects: [
+    [-.06, 34, 1.12, 1.4, K.gold], [-.06, 0, 1.12, 1.4, K.gold], [.46, 35.4, .08, .6, K.gold],
+    [0, 1.4, 1, 32.6, K.indigo], [.06, 3, .88, 29.4, K.indigoL],
+    [.24, 20, .52, 9, K.goldL], [.3, 21, .4, 7, '#fff6d8'], [.32, 26, .1, 1, K.goldL],
+    [.1, 8, .8, 1, K.pink], [.16, 5, .1, 3, K.pinkD], [.36, 6, .1, 2, K.pinkD], [.6, 5, .1, 3, K.pinkD], [.8, 6, .1, 2, K.pinkD],
+    [.12, 12, .3, 2, K.pink], [.6, 14, .3, 2, K.pink], [.2, 15, .12, 1, K.gold], [.68, 11, .12, 1, K.gold]] },
 };

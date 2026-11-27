@@ -603,11 +603,21 @@ FURNITURE = {
     'hw_nunmaru_rug': dict(source='drop_normal', mats={Y: 3, 'river_reed': 1}, field='weaving', lv=53),
     'hw_dalmaji_lamp': dict(source='drop_guardian', mats={L: 2, 'iron_ingot': 1}, field='artifice', lv=54),
     'hw_haeoreum_table': dict(source='drop_guardian', mats={'lotus_seed': 2, 'lumber': 2}, field='carpentry', lv=55),
+    'hw_pado_perch': dict(source='drop_normal', mats={'coconut_fiber': 2, 'lumber': 2}, field='carpentry', lv=51),
+    'hw_bulssi_brazier_table': dict(source='drop_guardian', mats={V: 2, E: 2, 'iron_ingot': 1}, field='smithing', lv=52),
+    'hw_jaebit_dream_basin': dict(source='drop_normal', mats={I: 2, 'lumber': 1}, field='carpentry', lv=52),
+    'hw_nunmaru_farewell': dict(source='drop_guardian', mats={Y: 2, 'ice_salt': 1, 'lumber': 2}, field='carpentry', lv=53),
+    'hw_dalmaji_moon_scroll': dict(source='drop_normal', mats={'seal_paper': 2, L: 1}, field='weaving', lv=54),
+    'hw_haeoreum_lamp_tower': dict(source='drop_normal', mats={D: 1, 'lotus_seed': 1, 'iron_ingot': 1}, field='artifice', lv=55),
 }
 OUTFITS = [
     ('of_top_hw_gari_apron', 'top:hw_gari_apron', '파도너울성 장터 밥집 사람들이 가리 솥 앞에서 입는 적삼입니다. 청록 앞치마에 강황빛 점을 놓았습니다.', 'weaving', {'coconut_fiber': 3, 'blue_salt': 1}, 50),
     ('of_top_hw_yak_vest', 'top:hw_yak_vest', '눈마루 사람들이 남색 적삼 위에 걸치는 털소 털 조끼입니다. 붉은 허리띠를 맵니다.', 'weaving', {Y: 3, 'ice_salt': 1}, 53),
     ('of_bottom_hw_lotus_wrap', 'bottom:hw_lotus_wrap', '해오름성 연밥 둑 사람들이 허리에 둘러 매는 연잎빛 치마입니다. 단에 연분홍 줄을 둘렀습니다.', 'weaving', {'lotus_seed': 2, 'coconut_fiber': 2}, 55),
+    ('of_top_hw_moonrobe', 'top:hw_moonrobe', '달맞이성 사람들이 보름 달맞이 날 걸치는 연분홍 덧옷입니다. 남색 깃에 금빛 달무늬를 놓았습니다.', 'weaving', {'coconut_fiber': 2, L: 1}, 54),
+    ('of_top_hw_inkdream', 'top:hw_inkdream', '잿빛그늘숲 사람들이 먹비 철에 입는 먹빛 적삼입니다. 빗물에 비친 꿈 조각처럼 옅은 보랏빛 점이 흩어져 있습니다.', 'weaving', {I: 2, 'coconut_fiber': 1}, 52),
+    ('of_bottom_hw_ember_hakama', 'bottom:hw_ember_hakama', '불씨들녘 장인들이 화로 곁에서 입는 잿빛 너른 바지입니다. 튄 불티 자국을 일부러 주홍 실로 수놓아 남깁니다.', 'weaving', {Y: 2, E: 1}, 52),
+    ('of_acc_hw_lotus_earring', 'acc:hw_lotus_earring', '해오름성 사람들이 아침 등불을 끈 뒤 다는 귀걸이입니다. 꺼진 등잔 대신 연꽃 구슬이 불빛을 대신합니다.', 'artifice', {'lotus_seed': 1, D: 1}, 55),
     ('of_acc_hw_dawnpin', 'acc:hw_dawnpin', '첫볕 물가에서 주운 비늘을 부채꼴로 엮은 머리꽂이입니다. 아침 해를 받으면 주홍빛이 돕니다.', 'artifice', {D: 1, HW: 1}, 55),
 ]
 

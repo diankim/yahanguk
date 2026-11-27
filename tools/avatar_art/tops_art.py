@@ -475,6 +475,28 @@ TOPS = {
         "...xcdaaaadcb...",
         "...yccccccccy...",
     ]),
+    'hw_moonrobe': ('보름맞이 연분홍 덧옷', {'a': '#e8a6b8', 'b': '#c8869a', 'c': '#d8b04a', 'd': '#2a3266', 'e': '#fff2c8'}, [
+        "................",
+        "....xdddddb.....",
+        "..bxaacdcaaaby..",
+        "..bxaaacaaaaby..",
+        "..cxaeacaaaacc..",
+        "...dddddddddd...",
+        "...xaaacaaeab...",
+        "..xaaaacaaaaab..",
+        "..cbbbbcbbbbbc..",
+    ]),
+    'hw_inkdream': ('꿈무늬 먹 적삼', {'a': '#2c3038', 'b': '#20242a', 'c': '#8a8ab8', 'd': '#c8c8f0', 'e': '#9aa69a'}, [
+        "................",
+        "....xeeeeeb.....",
+        "..bxaacaaaaaby..",
+        "..bxaaaadaaaby..",
+        "..bxacaaaacaby..",
+        "...eeeeeeeeee...",
+        "...xaadaaacab...",
+        "...xacaaadaab...",
+        "...ybbbcbbbby...",
+    ]),
 }
 
 
@@ -666,6 +688,7 @@ BOTTOMS = {
     'rb_dalmaji': ('연분홍 주름 너른 바지', 'gather', '#e8a6b8', '#c8869a', '#c9a24a', '#d8b04a'),
     'rb_haeoreum': ('연밥 주름 두른 바지', 'sampot', '#c8562e', '#a8421f', '#d8b25a', '#e8c25a'),
     'hw_lotus_wrap': ('연잎 두른 치마', 'sarong', '#4f8a4a', '#3c6e3a', '#2a2a2e', '#e898a8'),
+    'hw_ember_hakama': ('불티 박힌 잿빛 바지', 'hakama', '#4a4442', '#3a3432', '#2a2220', '#f08a3a'),
 }
 
 
@@ -729,6 +752,12 @@ ACC = {
         "b.",
         "cc",
         "cc",
+    ]),
+    'hw_lotus_earring': ('연꽃 등잔 귀걸이', {'a': '#d8b25a', 'b': '#e898a8', 'c': '#ffd070'}, 3, 18, [
+        "a....................a",
+        "b....................b",
+        "c....................c",
+        "b....................b",
     ]),
     'hw_dawnpin': ('첫볕 비늘 머리꽂이', {'a': '#d8b25a', 'b': '#f6e2a0', 'c': '#e8832a'}, 18, 2, [
         "..b.",
