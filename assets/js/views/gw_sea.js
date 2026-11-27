@@ -77,8 +77,8 @@ function dhBoard(s, live, moveTo) {
     cells += `<rect class="${cls}" ${pushed ? 'data-push="water"' : ''} x="${fx(x - DH_G / 2)}" y="${fx(y - DH_G / 2)}" width="${DH_G}" height="${DH_G}" rx="6" ${moves.has(c) || (live && c === here) ? `data-mk-step="${c}"` : ''}><title>${esc(label)}</title></rect>`;
     if (!r) cells += `<text class="hx-no" x="${fx(x - DH_G / 2 + 8)}" y="${fx(y - DH_G / 2 + 12)}">${c}</text>`;
     if (c === head) cells += `<text class="dh-head-t" x="${fx(x)}" y="${fx(y + DH_G / 2 - 6)}">${esc(T.dohaesu.hz.head)}</text>`;
-    if (wave === flow && !r) marks += telWave(x, y, DH_ANG[flow.dir] ?? 0, due(flow));
-    if (wave === breath && !r) { const [cx, cy] = dhAt(6); marks += telWave(x, y, Math.atan2(cy + DH_G / 2 + 2 - y, cx + DH_G / 2 + 2 - x), due(breath)); }
+    if (wave && wave === flow && !r) marks += telWave(x, y, DH_ANG[flow.dir] ?? 0, due(flow));
+    if (wave && wave === breath && !r) { const [cx, cy] = dhAt(6); marks += telWave(x, y, Math.atan2(cy + DH_G / 2 + 2 - y, cx + DH_G / 2 + 2 - x), due(breath)); }
   }
   const [rx, ry] = dhAt(6), mid = [rx + DH_G / 2 + 2, ry + DH_G / 2 + 2];
   cells += `<g class="dh-rift ${breath ? 'spin' : ''} ${breath && due(breath) ? 'due' : ''}"><path d="M${fx(mid[0] - 50)} ${fx(mid[1] - 8)} q20 -18 34 -4 t30 -10 t20 14 M${fx(mid[0] - 46)} ${fx(mid[1] + 14)} q18 10 36 0 t32 6"/><circle class="eye" cx="${fx(mid[0])}" cy="${fx(mid[1])}" r="22"/><text x="${fx(mid[0])}" y="${fx(mid[1] + 5)}">${breath ? num(breath) : esc(T.dohaesu.boss.name)}</text></g>`;
