@@ -432,9 +432,7 @@ async function renderDirect(body) {
     const chipList = (items, side) => bundleChips(items, `data-rm-${side}`);
     const inc = (pending || []).filter(t => t.incoming), out = (pending || []).filter(t => !t.incoming);
     body.innerHTML = `
-      ${inc.length ? `<h3 class="sub-h">받은 제안 ${inc.length}</h3><ul class="spot-list">${inc.map(t => `<li><div><b>${esc(t.other_name)}님의 제안</b>
-          <small>받을 것: ${esc(bundle(t.give_items, t.give_gil))}</small><small>줄 것: ${esc(bundle(t.want_items, t.want_gil))}</small><small class="muted">${fmt.remain(new Date(t.expires_at) - Date.now())} 뒤 사라짐</small></div>
-        <div class="btn-row"><button class="btn small primary" data-here="직접 거래" data-dt-acc="${esc(t.trade_id)}">수락</button><button class="btn small" data-dt-dec="${esc(t.trade_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
+      ${inc.length ? `<h3 class="sub-h">받은 제안 ${inc.length}</h3>${incHtml(inc)}` : ''}
       ${people.length ? `<form class="dt-form" id="dt-form">
         <label class="field"><span>거래할 조사원 (같은 곳에 있는 사람)${helpQ(DIRECT_TIP, '직접 거래 안내')}</span><select name="to">${people.map(p => `<option value="${esc(p.owner_id)}" ${p.owner_id === dt.to ? 'selected' : ''}>${esc(p.character_name)} · Lv.${p.level}</option>`).join('')}</select></label>
         <div class="dt-cols">
@@ -480,10 +478,31 @@ async function renderDirect(body) {
       };
     }
     ['give', 'want'].forEach(side => $$(`[data-rm-${side}]`, body).forEach(b => b.onclick = e => { e.preventDefault(); delete dt[side][b.getAttribute(`data-rm-${side}`)]; renderDirect(body); }));
-    $$('[data-dt-acc]', body).forEach(b => b.onclick = async () => { if (await ask('이 거래를 받아들일까요? 바로 맞바꿉니다.', { title: '거래 수락', ok: '받아들이기' })) guard(b, () => act('world_trade_direct_respond', { p_trade_id: b.dataset.dtAcc, p_accept: true })); });
-    $$('[data-dt-dec]', body).forEach(b => b.onclick = () => guard(b, () => act('world_trade_direct_respond', { p_trade_id: b.dataset.dtDec, p_accept: false })));
+    bindInc(body);
     $$('[data-dt-cancel]', body).forEach(b => b.onclick = () => guard(b, () => act('world_trade_direct_cancel', { p_trade_id: b.dataset.dtCancel })));
   } catch (e) { body.innerHTML = errorBox(e.message); }
+}
+
+const incHtml = inc => `<ul class="spot-list">${inc.map(t => `<li><div><b>${esc(t.other_name)}님의 제안</b>
+    <small>받을 것: ${esc(bundle(t.give_items, t.give_gil))}</small><small>줄 것: ${esc(bundle(t.want_items, t.want_gil))}</small><small class="muted">${fmt.remain(new Date(t.expires_at) - Date.now())} 뒤 사라짐 · 보낸 사람과 같은 곳에서 받을 수 있습니다</small></div>
+  <div class="btn-row"><button class="btn small primary" data-here="직접 거래" data-dt-acc="${esc(t.trade_id)}">수락</button><button class="btn small" data-dt-dec="${esc(t.trade_id)}">거절</button></div></li>`).join('')}</ul>`;
+const bindInc = (body, after) => {
+  $$('[data-dt-acc]', body).forEach(b => b.onclick = async () => { if (await ask('이 거래를 받아들일까요? 바로 맞바꿉니다.', { title: '거래 수락', ok: '받아들이기' })) { await guard(b, () => act('world_trade_direct_respond', { p_trade_id: b.dataset.dtAcc, p_accept: true })); after?.(); } });
+  $$('[data-dt-dec]', body).forEach(b => b.onclick = async () => { await guard(b, () => act('world_trade_direct_respond', { p_trade_id: b.dataset.dtDec, p_accept: false })); after?.(); });
+};
+export function openDirectInbox() {
+  const m = openModal({ title: '받은 거래 제안', body: '<div class="fac-body"></div>' });
+  const box = $('.fac-body', m);
+  const draw = async () => {
+    if (!box.isConnected) return;
+    box.innerHTML = loading();
+    try {
+      const inc = ((await rpc('world_trade_direct_snapshot')) || []).filter(t => t.incoming);
+      box.innerHTML = inc.length ? incHtml(inc) : empty('기다리는 거래 제안이 없습니다. 시간이 지났거나 이미 답한 제안입니다.', 'coin');
+      bindInc(box, draw);
+    } catch (e) { box.innerHTML = errorBox(e.message); }
+  };
+  draw();
 }
 
 export function openDirectTrade(to) {
