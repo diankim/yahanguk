@@ -207,6 +207,7 @@
 이동 시간은 거리·위치·지형을 반영한다. 탈것은 안전지대 마구간에서 들이거나 특별한 사건으로만 얻는다(가방·메뉴 바로 구매 없음). 세계 지도에서 이해하기 쉽게 제공한다.
 
 - 운임: 구간마다 노정패 1~2개(world_travel_route가 출발 때 구간 수×운임 차감), 모자라면 걸어감(×1, 운임 없음). 내리기 world_mount_unequip(mount_id null이면 걸어서, fn_owner_field에 world_characters.mount_id 열 쓰기만 줌).
+- 노정패 상한 1,000개(3.8.1y 사용자 결정 11/28 — world_token_rules().cap, trg_world_token_cap가 늘어나는 갱신만 상한에서 자름: 넘는 몫은 사라지고, 이미 상한보다 많은 사람은 그대로 두되 상한 아래로 내려갈 때까지 늘지 않음, 노정패 묶음은 상한이면 world_use_item이 거절 HINT tokens_full).
 - 노정패: 토벌 승리 1·탐색·채집 6번에 1번꼴 1·이야기 3·의뢰·임무 2(원정 귀환 없음). 쓰는 곳: 원정 운임(외곽 1·심부 2·핵심 3), 탈것 단련 world_mount_train(마구간, 20×다음 단계, 단계마다 속도 +4%, 최고 5, world_owned_mounts.training).
 - 이동 보상(경험치·탐사 기술·상태 굴림·세력 임무·이동 칭호/꾸미기)은 도착 기록(world_events travel + travel_history_id)에만. 상태 굴림은 안전지대 도착이면 없음, 바깥 도착은 1/3.
 - 취소 world_travel_cancel: 출발 60초 안, 위약금 없음, 뒤 3분 출발 불가(world_guard_action_context). 화면은 취소 응답 cooldown_seconds(또는 출발 거절 오류의 hint 「cd:초」 — world_guard_action_context가 RAISE … USING HINT, core.js rpc가 오류에 hint·code를 실음, 1.0.4n)를 기기에 적어(views/common.js setTravelCd·travelCdLeft·travelCdFromError, localStorage yh-travel-cd:<uid>) 지도 출발 단추를 잠그고 남은 시간을 보이며(map.js [data-tcd]), 현장 「길 떠나기」에도 적는다(home.js data-tcd-home). 끝나면 기기 시계로 풀림, 서버 재요청 없음.
