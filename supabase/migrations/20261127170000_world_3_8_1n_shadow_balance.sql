@@ -13,7 +13,7 @@ end $f$;
 
 select pg_temp.yh_fix('world_combat_stats', array[
   $a$WHEN c.job_key = 'bloodknight' THEN 0.9 WHEN$a$,
-  $a$WHEN c.job_key = 'bloodknight' THEN 0.9 WHEN c.job_key IN ('medic', 'formation') THEN 0.9 WHEN$a$]);
+  $a$WHEN c.job_key = 'bloodknight' THEN 0.9 WHEN c.job_key IN ('medic', 'formation') THEN 0.85 WHEN$a$]);
 
 select pg_temp.yh_fix('world_contrib_rules', array[
   $a$"heal": 0.1,$a$, $a$"heal": 0.05,$a$,
@@ -32,13 +32,17 @@ select pg_temp.yh_fix('world_field_search', array[
     w_spot := w_spot * greatest(1, 1 + (public.world_status_effect_total('clue_bonus_pct') + public.world_title_bonus('clue_bonus_pct')) / 100.0);
   END IF;$a$]);
 
+select pg_temp.yh_fix('world_tourney_rules', array[
+  $a$"medic": {"dealt": 1.10,$a$, $a$"medic": {"dealt": 1.29,$a$,
+  $a$"formation": {"dealt": 1.12,$a$, $a$"formation": {"dealt": 1.32,$a$]);
+
 select pg_temp.yh_fix('world_shadow_rules', array[$a$"hp_mul": 350,$a$, $a$"hp_mul": 450,$a$]);
 
 update public.world_patch_notes set body = body || E'\n- [그림자] 사슬 벗은 그림자의 체력이 늘어, 다 함께 쳐도 10~15분쯤 걸리게 했습니다.'
 where note_id = '3.8.0' and position('[그림자] 사슬 벗은 그림자의 체력이 늘어' in body) = 0;
 
-update public.world_patch_notes set body = body || E'\n- [직업] 의무관·진법가의 공격력이 ×0.9가 됩니다(모든 싸움). 치유를 맡는 직업이 공격수만큼 때리지 않게 했습니다.'
-where note_id = '3.8.0' and position('[직업] 의무관·진법가의 공격력이 ×0.9' in body) = 0;
+update public.world_patch_notes set body = body || E'\n- [직업] 의무관·진법가의 공격력이 ×0.85가 됩니다(모든 싸움, 호위 무사와 같음). 치유를 맡는 직업이 공격수만큼 때리지 않게 했고, 비무에서는 직업 보정으로 그만큼 되돌려 지금 균형을 지킵니다.'
+where note_id = '3.8.0' and position('[직업] 의무관·진법가의 공격력이' in body) = 0;
 
 update public.world_patch_notes set body = body || E'\n- [기여도] 실제로 깎은 피해를 기여도에 더 크게 셉니다. 진법가가 막아 준 피해를 다른 직업과 같게 세고, 진법가·혈기사·봉인술사의 직업 보정을 낮추고 월궁 사수 보정을 올렸습니다.'
 where note_id = '3.8.0' and position('[기여도] 실제로 깎은 피해를 기여도에 더 크게' in body) = 0;
