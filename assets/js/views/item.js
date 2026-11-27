@@ -281,6 +281,8 @@ function draw(box, id, inv, prices, mode) {
         `<button class="btn small act-dc" data-do="discard" ${dcMax < 1 ? 'disabled' : ''}>버리기</button>`,
         stashOk && stMax > 0 ? '<button class="btn small" data-do="stash" data-here="창고 이용">창고에</button>' : '',
         USABLE[id] ? (useLabel(id) !== '사용' ? `<button class="btn small primary" data-do="use" data-here="물품 사용">${useLabel(id)}</button>` : '<button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>사용</button>') : ''] })}
+      ${isHq(id) && (inv.catalog || []).some(x => x.id === bid) ? `<p class="muted small">보통 ${esc(nameOf(bid))}(으)로 바꾸면 같은 물품끼리 한 칸에 모입니다. 되돌릴 수 없습니다.</p>
+      ${actBox({ key: 'dq', max: dcMax, cls: 'act-end', btns: [`<button class="btn small" data-do="downgrade" data-here="보통 물품으로 바꾸기" ${dcMax < 1 ? 'disabled' : ''}>보통 물품으로</button>`] })}` : ''}
       <p class="muted small">${locked ? `잠금 ${keep}개 · ${dcMax > 0 ? `내줄 수 있는 것 ${dcMax}개` : '내줄 수 있는 것 없음'}${helpQ('잠근 수만큼은 가방·창고를 합쳐 팔기·버리기·분해·넘기기를 할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.', '잠금 안내')}` : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
 
   bindQty(box);
@@ -324,6 +326,14 @@ function draw(box, id, inv, prices, mode) {
       if (!(q >= 1 && q <= stMax)) return toast(`1~${stMax}개 사이로 정하세요.`, 'error');
       const ok = await run(() => act('world_storage_put', { p_item: id, p_qty: q }));
       if (ok && q >= have) { closeInfo(); return; }
+    }
+    if (k === 'downgrade') {
+      const q = qtyOf(box, 'dq') || 1;
+      if (!(q >= 1 && q <= dcMax)) return toast(`1~${dcMax}개 사이로 정하세요.`, 'error');
+      if (!(await ask(`${nameOf(id)} ×${q}을(를) 보통 ${nameOf(bid)}(으)로 바꿀까요? 되돌릴 수 없습니다.`, { title: '보통 물품으로', ok: '바꾸기', cancel: '그만두기' }))) return;
+      const ok = await run(() => act('world_item_downgrade', { p_item_id: id, p_qty: q }));
+      if (ok && q >= have) { closeInfo(); return; }
+      if (!ok) return;
     }
     if (k === 'discard') {
       const q = qtyOf(box, 'q') || 1;
