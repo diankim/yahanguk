@@ -402,7 +402,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 장비 내구도
 
-무기는 공격, 방어구·관모는 맞을 때, 도구는 채집, 신은 이동 구간마다 1씩 닳는다(노리개·호신부·탈은 안 닳음). 1/4 아래 성능 −20%, 0이면 효과 없음. 수리 도구(어디서나 절반) 또는 안전지대에서 전으로 완전 수리. world_item_durability는 사람×물품 하나(여럿이면 장착해 닳은 한 벌). 팔기·버리기·분해로 하나를 내놓으면 닳은 쪽 먼저, 0개면 기록 삭제(trg_world_wear_leaves_first, 세 함수가 yh.wear_leaves). 창고·거래는 그대로(공짜 수리 방지).
+무기는 공격, 방어구·관모는 맞을 때, 도구는 채집, 신은 이동 구간마다 1씩 닳는다(노리개·호신부·탈은 안 닳음). 1/4 아래 성능 −20%, 0이면 효과 없음. 수리 도구(어디서나 절반) 또는 안전지대에서 전으로 완전 수리. world_item_durability는 사람×물품 하나(여럿이면 장착해 닳은 한 벌). 팔기·버리기·분해로 하나를 내놓으면 닳은 쪽 먼저, 0개면 기록 삭제(trg_world_wear_leaves_first, 세 함수가 yh.wear_leaves). 창고·거래는 그대로(공짜 수리 방지). 수리 도구로 모두 고치기 world_equipment_repair_kit_all()(4.0 사용자 결정 — world_repair_quote 목록을 장착 중 → 많이 닳은 순으로 world_equipment_repair(kit)를 하나씩, 도구가 떨어지면 멈춤, 어디서나; 화면 services.js kitAllHtml·bindKitAll — 가방 › 장비 「장착 중인 장비」 칸·대장간 › 수리).
 
 ### 채집
 

@@ -6,6 +6,7 @@ import { helpQ, helpLine } from '../tips.js';
 import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES, MOUNT_REALM, TOKEN_CAP } from '../rules.js';
 import { ownSlot, ownKind, fillOwned } from '../owned.js';
 import { GAMEDATA as GD } from '../gamedata.js';
+import { hqCount } from '../hq.js';
 import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 
 const infoName = (id, label, cat) => `${kindChip(id, cat)}<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
@@ -234,9 +235,9 @@ async function repairPane(body) {
       <div class="item-act"><button class="btn small" data-here="수리" data-rep-one="${esc(i.item_id)}" ${store.character?.gil < i.cost ? 'disabled' : ''}>고치기</button></div></li>`).join('')}</ul>
     <div class="shop-foot"><span>${items.length}개 · 합계 <b>${fmt.jeon(q.total)}</b>${store.character?.gil < q.total ? ' <span class="bad">· 전이 모자랍니다</span>' : ''}</span>
       <button class="btn primary" id="rep-all" data-here="수리" ${store.character?.gil < q.total ? 'disabled' : ''}>모두 고치기</button></div>
-    <p class="muted small">하나씩 고치거나 한 번에 모두 새것처럼 고칩니다. 값은 어느 쪽이든 같습니다.</p>`
+    <p class="muted small">하나씩 고치거나 한 번에 모두 새것처럼 고칩니다. 값은 어느 쪽이든 같습니다.</p>${kitAllHtml(q, store.character?.inventory)}`
     : empty('고칠 장비가 없습니다. 모두 멀쩡합니다.', 'shield');
-  bindInfo(body);
+  bindInfo(body); bindKitAll(body, () => repairPane(body));
   $$('[data-rep-one]', body).forEach(b => b.onclick = async () => {
     await guard(b, () => act('world_equipment_repair', { p_item_id: b.dataset.repOne, p_method: 'gil' }));
     repairPane(body);
@@ -647,6 +648,15 @@ export function bindMountRealm(root, snap, st) {
   bindListFilter(root, st, () => $$('[data-mk-cat]', root));
   $$('[data-lfc]', root).forEach(b => b.addEventListener('click', () => { try { localStorage.setItem(mrKey(snap), b.dataset.lfc); } catch {} }));
 }
+export const kitAllHtml = (rq, have) => { const n = (rq?.items || []).length; if (!n) return '';
+  const kits = hqCount(have || {}, 'repair_kit');
+  return `<div class="kit-all"><span class="muted small">닳은 장비 ${n}개 · 수리 도구 ${kits}개${helpQ('장착 중인 것부터, 많이 닳은 것부터 장비 하나에 수리 도구 하나씩 씁니다. 도구가 모자라면 있는 만큼만 손봅니다. 어디서나 쓸 수 있고, 한 번에 내구도 절반(우수품 도구는 60%)을 되살립니다.', '수리 도구로 모두 고치기')}</span>
+    <button class="btn small" data-here="수리" data-kit-all data-kits="${kits}" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구로 모두 고치기</span></button></div>`; };
+export const bindKitAll = (root, after) => $$('[data-kit-all]', root).forEach(b => b.onclick = async () => {
+  const kits = Number(b.dataset.kits) || 0;
+  if (!await ask(`수리 도구로 닳은 장비를 모두 손볼까요? 장비 하나에 도구 하나씩, 가진 도구(${kits}개)만큼 씁니다.`, { title: '수리 도구로 모두 고치기', ok: '고치기' })) return;
+  await guard(b, () => act('world_equipment_repair_kit_all')); after?.();
+});
 export const mountRow = m => listRowAttrs(MOUNT_REALM.of(m), m.mount_name);
 const MSTAR = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.8l2.85 5.95 6.55.8-4.8 4.55 1.2 6.5L12 17.4l-5.8 3.2 1.2-6.5-4.8-4.55 6.55-.8z" stroke-linejoin="round"/></svg>';
 const mFavs = snap => new Set(snap?.favs || []);

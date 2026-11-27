@@ -3325,6 +3325,7 @@ b.sealed { color: var(--bad); }
 .fav-star { display: inline-grid; place-items: center; width: 32px; height: 32px; margin: -6px 0 -6px -6px; border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 6px; flex: none; }
 .fav-star:hover { color: var(--text); }
 .fav-star.on { color: var(--accent); }
+.kit-all { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 .hud-card.money b small { font-weight: 400; color: var(--muted); font-size: calc(11px * var(--fz, 1)); }
 .hud-card.money b.tok-full { color: var(--warn); }
 .hud-card.money b.tok-full small { color: inherit; }

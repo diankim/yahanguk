@@ -79,3 +79,27 @@ begin
 end $f$;
 revoke all on function public.world_dismantle_batch(text, integer) from public, anon;
 grant execute on function public.world_dismantle_batch(text, integer) to authenticated;
+
+create or replace function public.world_equipment_repair_kit_all() returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $f$
+declare uid uuid := public.fn_owner_auth_uid(); q jsonb; x jsonb; r jsonb; done int := 0; used int := 0; why text; nm text[] := '{}'; left_n int := 0;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  q := public.world_repair_quote();
+  if jsonb_array_length(coalesce(q -> 'items', '[]'::jsonb)) = 0 then raise exception '고칠 장비가 없습니다.'; end if;
+  for x in select value from jsonb_array_elements(q -> 'items')
+    order by coalesce((value ->> 'equipped')::boolean, false) desc, (value ->> 'durability')::numeric / greatest(1, (value ->> 'max')::numeric) loop
+    begin
+      r := public.world_equipment_repair(x ->> 'item_id', 'kit');
+    exception when others then
+      why := sqlerrm; exit;
+    end;
+    done := done + 1; nm := nm || (coalesce(x ->> 'name', x ->> 'item_id') || ' ' || (r ->> 'durability') || '/' || (r ->> 'max'));
+  end loop;
+  if done = 0 then raise exception '%', coalesce(why, '수리하지 못했습니다.'); end if;
+  left_n := jsonb_array_length(q -> 'items') - done;
+  return jsonb_build_object('ok', true, 'done', done, 'left', left_n, 'stopped', why,
+    'content', '수리 도구 ' || done || '개로 장비를 손봤습니다 · ' || array_to_string(nm, ' · ')
+      || case when left_n > 0 then ' · ' || left_n || '개는 손보지 못함(' || coalesce(why, '') || ')' else '' end);
+end $f$;
+revoke all on function public.world_equipment_repair_kit_all() from public, anon;
+grant execute on function public.world_equipment_repair_kit_all() to authenticated;
