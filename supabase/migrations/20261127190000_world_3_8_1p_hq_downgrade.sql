@@ -38,7 +38,7 @@ revoke all on function public.world_item_downgrade(text, integer) from public, a
 grant execute on function public.world_item_downgrade(text, integer) to authenticated, service_role;
 alter function public.world_item_downgrade(text, integer) owner to fn_owner_field;
 
-update public.world_patch_notes set body = body || E'\n- [가방] 우수품을 보통 물품으로 바꿀 수 있습니다. 물품 정보 창에서 수량을 골라 「보통 물품으로」를 누르면 됩니다(값 없음, 되돌릴 수 없음). 가방에 있는 것만 바뀌고, 잠가 지키는 몫·장착 중인 마지막 하나·강화한 장비·닳은 마지막 장비는 바꿀 수 없습니다.'
+update public.world_patch_notes set body = body || E'\n- [가방] 우수품을 보통 물품으로 바꿀 수 있습니다. 물품 정보 창에서 수량을 골라 「품질 하향」을 누르면 됩니다(값 없음, 되돌릴 수 없음). 가방에 있는 것만 바뀌고, 잠가 지키는 몫·장착 중인 마지막 하나·강화한 장비·닳은 마지막 장비는 바꿀 수 없습니다.'
 where note_id = '3.8.0' and position('[가방] 우수품을 보통 물품으로 바꿀 수 있습니다' in body) = 0;
 
 create or replace function pg_temp.yh_fix(p_name text, p_pairs text[]) returns void language plpgsql as $f$
