@@ -102,6 +102,7 @@ export function openItemPick({ title = '물품 고르기', rows = [], many = fal
     list.innerHTML = shown.slice(0, LIMIT).map(rowHtml).join('')
       + (shown.length > LIMIT ? `<li class="muted small ipk-more">${fmt.num(shown.length - LIMIT)}가지 더 있습니다. 이름으로 좁혀 찾으세요.</li>` : '')
       || '<li class="muted small ipk-more">맞는 물품이 없습니다.</li>';
+    if (many) $$('[data-ipk] [data-d]', list).forEach(btn => { const id = btn.closest('[data-ipk]').dataset.ipk, r = rows.find(x => x.id === id); holdRepeat(btn, () => setQty(id, qty(r) + Number(btn.dataset.d))); });
     sum();
   };
   const setQty = (id, v) => {
@@ -123,9 +124,9 @@ export function openItemPick({ title = '물품 고르기', rows = [], many = fal
     const li = e.target.closest('[data-ipk]'); if (!li) return;
     const id = li.dataset.ipk, r = rows.find(x => x.id === id);
     if (!many) { if (e.target.closest('[data-ipk-pick]')) { layer.close(); onDone?.(id); } return; }
-    const d = e.target.closest('[data-d]'), all = e.target.closest('[data-all]');
-    if (d) setQty(id, qty(r) + Number(d.dataset.d));
-    else if (all) setQty(id, qty(r) === (r.max ?? 999) ? 0 : r.max ?? 999);
+    if (e.target.closest('[data-d]')) return;
+    const all = e.target.closest('[data-all]');
+    if (all) setQty(id, qty(r) === (r.max ?? 999) ? 0 : r.max ?? 999);
     else if (e.target.closest('[data-ipk-pick]')) setQty(id, qty(r) ? 0 : 1);
   });
   list.addEventListener('change', e => { const i = e.target.closest('input'); if (i) setQty(i.closest('[data-ipk]').dataset.ipk, i.value); });
