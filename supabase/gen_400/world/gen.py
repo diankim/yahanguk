@@ -391,7 +391,7 @@ for k, spec in D.FURNITURE.items():
         tr = {'hk': k, 'kind': 'wall', 'wall': f['kind'], 'ww': f['w'], 'wh': f['h'], 'cat': f['cat'], 'grade': f['grade']}
     iid = 'hf_' + k
     mz = spec['source'] == 'meisho'
-    items.append(item(iid, f['name'], 'furniture', f['grade'], (f"명장 가구 · {tr['cat']}. 흐름 서린 재료로 짓는 별채 가구입니다. 창 너머 풍경이 그 시각의 시간대·날씨를 따라 바뀝니다." if mz else f"별채 가구 · {tr['cat']}.") + " 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.", 1, 0, True, spec['lv'], traits=tr))
+    items.append(item(iid, f['name'], 'furniture', f['grade'], (f"명장 가구 · {tr['cat']}. 명소 재료로 짓는 별채 가구입니다. 창 너머 풍경이 그 시각의 시간대·날씨를 따라 바뀝니다." if mz else f"별채 가구 · {tr['cat']}.") + " 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.", 1, 0, True, spec['lv'], traits=tr))
     names_new.append(f['name'])
     recipes.append(recipe('r_' + iid, f['name'] + ' 만들기', iid, 1, spec['mats'], spec['field'], spec['lv'], f"별채에 놓을 {f['name']}을(를) 만든다." + (f" 명장 제작법({spec['rank']}단계)." if mz else ''), f['grade'],
                           loc=spec.get('loc'), skill=('wardcraft' if spec['field'] == 'sealing' else spec['field']) if mz else None, rank=spec.get('rank', 1)))
