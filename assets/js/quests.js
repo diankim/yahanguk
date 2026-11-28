@@ -204,7 +204,7 @@ const HERE_KINDS = new Set(['win', 'gather', 'fish', 'search', 'clue']);
 const setOf = a => (a || []).length ? new Set(a) : null;
 function watchOf(b) {
   const res = [], give = new Set();
-  const add = (k, regs, t) => res.push({ k, re: TASK_ACTS[k] || CHANGES.boardOther, regs: HERE_KINDS.has(k) ? setOf(regs) : null, mn: setOf(t?.mn), items: setOf(t?.items), left: t ? t.n - t.cur : 0 });
+  const add = (k, regs, t) => res.push({ k, re: TASK_ACTS[k] || CHANGES.boardOther, regs: HERE_KINDS.has(k) ? setOf(regs) : null, mn: setOf(t?.mn), items: setOf(t?.items), left: t ? t.n - t.cur : 0, src: t || null });
   for (const q of [...(b.active || []), ...(b.faction && !b.faction.locked ? [b.faction] : [])]) {
     for (const t of q.tasks || []) if (t.cur < t.n) add(t.t, t.regions, t);
     for (const g of q.give || []) give.add(g.item_id);
@@ -241,6 +241,7 @@ function progress(w, name, data) {
     if (!t.re.test(name) || (t.regs && !t.regs.has(w.here) && !hit('boardAway', name)) || !counts(t, name, data)) continue;
     if (!ONE_STEP(t, name)) { now = true; break; }
     t.left -= 1; if (t.left <= 0) { now = true; break; }
+    if (t.src && t.src.cur < t.src.n) t.src.cur += 1;
     soon = true;
   }
   return now ? 'now' : soon ? 'soon' : '';
