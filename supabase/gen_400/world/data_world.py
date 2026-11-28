@@ -634,6 +634,8 @@ FURNITURE = {
     'hw_arch_niche': dict(source='drop_normal', mats={'lumber': 2, 'red_spice_pod': 1}, field='carpentry', lv=53),
     'hw_patterned_carpet': dict(source='drop_guardian', mats={Y: 2, 'red_spice_pod': 2}, field='weaving', lv=54),
     'hw_pierced_lantern': dict(source='drop_guardian', mats={'iron_ingot': 2, E: 1}, field='smithing', lv=54),
+    'hw_neol_porthole': dict(source='meisho', mats={'mz_wood_f': 1, 'mz_stone_f': 1, 'flow_essence': 2, K: 2}, field='artifice', lv=50, rank=45, loc='dm_city'),
+    'hw_gureum_window': dict(source='meisho', mats={'mz_wood_f': 1, 'mz_herb_f': 1, 'flow_essence': 2, 'lumber': 4}, field='carpentry', lv=50, rank=45, loc='dm_city'),
 }
 OUTFITS = [
     ('of_top_hw_gari_apron', 'top:hw_gari_apron', '파도너울성 장터 밥집 사람들이 가리 솥 앞에서 입는 적삼입니다. 청록 앞치마에 강황빛 점을 놓았습니다.', 'weaving', {'coconut_fiber': 3, 'blue_salt': 1}, 50),

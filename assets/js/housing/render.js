@@ -54,6 +54,81 @@ function viewPix(u, v, X, Y, tw, th, e) {
   return c;
 }
 
+function skyAt(u, v, X, Y, tw, th, S, w, lo) {
+  const h1 = hash(X, Y), dith = (X + Y) % 2 === 0, cloudy = w === 'cloudy' || w === 'rain' || w === 'fog';
+  const t = (v - lo) / Math.max(.01, 1 - lo), k = t > .72 ? 0 : t > .4 ? 1 : 2;
+  const kk = (t > .69 && t < .75 && dith) ? 1 : (t > .37 && t < .43 && dith) ? 2 : k;
+  let c = S.sky[kk];
+  const dx = (u - S.at[0]) * tw, dy = (v - S.at[1]) * th, d = Math.hypot(dx, dy), R = S.at[2];
+  if (!cloudy && d < R) c = (S.moon && Math.hypot(dx + 1.4, dy + .6) < R - .4) ? S.sky[kk] : (w === 'bloodmist' ? '#e05040' : S.sun);
+  else if (!cloudy && !S.moon && d < R + 1.2 && dith) c = mix(c, S.sun, .5);
+  if (S.moon && !cloudy && w !== 'bloodmist' && d > R + 2 && h1 > .965) c = h1 > .992 ? '#fff8dc' : '#d8d8e8';
+  return c;
+}
+function weatherAt(c, u, v, X, Y, tw, th, w, lo) {
+  const h1 = hash(X, Y), sx = (X + .5) / tw * 2.2;
+  if (w === 'cloudy' || w === 'rain') {
+    c = mix(c, '#7c8088', w === 'rain' ? .45 : .28);
+    const cl = Math.sin(sx * 3 + 2) * .06 + .86, cl2 = Math.sin(sx * 4.4) * .05 + .72;
+    if (v > cl - .05 && v < cl + .05 && Math.abs(Math.sin(sx * 2.1)) > .25) c = w === 'rain' ? '#9a9ea6' : '#c8ccd0';
+    else if (v > cl2 - .035 && v < cl2 + .035 && Math.abs(Math.sin(sx * 1.7 + 1)) > .4) c = w === 'rain' ? '#8a8e96' : '#b4b8c0';
+  }
+  if (w === 'rain' && (X * 2 + Y) % 6 === 0 && h1 < .7 && v > lo) c = mix(c, '#d8e4ec', .55);
+  if (w === 'drizzle') { c = mix(c, '#9aa2aa', .15); if (v > lo && (X * 3 + Y * 2) % 11 === 0 && h1 < .5) c = '#dce6ec'; }
+  if (w === 'fog') { const fb = v > lo - .1 && v < lo + .22; c = mix(c, '#c8c8c0', fb ? .62 : .22); }
+  if (w === 'wind') { const ln = Math.round(th * (.7 + .05 * Math.sin(sx * 4))), ln2 = Math.round(th * (.86 + .04 * Math.sin(sx * 3 + 2))); if ((Y === ln && X % 9 < 5) || (Y === ln2 && (X + 4) % 11 < 6)) c = mix(c, '#ffffff', .45); }
+  if (w === 'snow' && h1 > .93) c = '#ffffff';
+  if (w === 'bloodmist') { c = mix(c, '#7a1e22', .38); if (v > lo && v < lo + .2 && (X + Y) % 2 === 0) c = mix(c, '#c84a44', .4); }
+  return c;
+}
+const HOUR = () => Math.floor(Date.now() / 3600000);
+function viewSea(u, v, X, Y, tw, th, e) {
+  const S = SKY[e?.phase] || SKY.night, w = e?.weather || 'clear', h1 = hash(X, Y), hz = .46, rough = w === 'wind' || w === 'rain' ? 2 : w === 'cloudy' || w === 'drizzle' ? 1 : 0;
+  let c;
+  if (v < hz) {
+    const depth = v / hz, band = Math.floor(depth * th * hz);
+    c = depth > .78 ? mix(S.water, S.far, .35) : depth > .4 ? S.water : mix(S.water, '#000000', .22);
+    if ((band + Math.floor(X / (3 - rough))) % (5 - rough) === 0 && (X + band * 2) % 7 < 3 + rough) c = mix(c, '#ffffff', rough ? .45 : .22);
+    if (w !== 'snow' && w !== 'fog' && w !== 'cloudy' && w !== 'rain' && Math.abs(u - S.at[0]) < .06 + depth * .03 && depth > .3 && (X + Y) % 2 === 0) c = S.glint;
+    if (Y === Math.round(hz * th) - 1) c = mix(c, '#ffffff', .18);
+    const bx = ((HOUR() * 7) % 10) / 10 * .7 + .12, onBoat = HOUR() % 3 !== 1;
+    if (onBoat) {
+      const du = (u - bx) * tw, dv = (v - hz) * th;
+      if (dv > -2.2 && dv < -.2 && Math.abs(du) < 3.2 - (-dv - .2) * .6) c = mix(S.near, '#000000', .3);
+    }
+    if (w === 'snow') c = mix(c, '#c8d8e0', .35);
+  } else {
+    c = skyAt(u, v, X, Y, tw, th, S, w, hz);
+    const bx = ((HOUR() * 7) % 10) / 10 * .7 + .12, du = (u - bx) * tw, dv = (v - hz) * th;
+    if (HOUR() % 3 !== 1 && dv >= 0 && dv < 5.5 && Math.abs(du) < (5.5 - dv) * .42 && du > -.6) c = mix(S.near, '#000000', .2);
+    if (HOUR() % 3 !== 1 && dv >= 0 && dv < 6.5 && Math.abs(du + .4) < .5) c = mix(S.near, '#000000', .45);
+    if (!S.moon && (w === 'clear' || !w) && (X * 5 + Y * 3) % 23 === 0 && v > hz + .25 && v < hz + .4) c = mix(c, '#ffffff', .5);
+  }
+  return weatherAt(c, u, v, X, Y, tw, th, w, hz);
+}
+function viewCloud(u, v, X, Y, tw, th, e) {
+  const S = SKY[e?.phase] || SKY.night, w = e?.weather || 'clear', h1 = hash(X, Y), sx = (X + .5) / tw * 2.2, lo = .34;
+  const top = lo + .05 * Math.sin(sx * 5.2 + 1) + .03 * Math.sin(sx * 11), peak = .58 - .3 * Math.abs(Math.sin(sx * 1.4 + .6)) - .04 * Math.sin(sx * 6);
+  const cl = S === SKY.night ? '#3a4470' : S === SKY.dusk ? '#e8a898' : S === SKY.dawn ? '#f2c8c0' : '#f4f6fa', clD = mix(cl, S.near, .35);
+  let c;
+  if (v < top) {
+    const t = v / top, puff = Math.sin(sx * 7 + Math.floor(t * 4)) > .3;
+    c = t > .82 ? cl : puff ? mix(cl, clD, .3) : clD;
+    if ((X + Y) % 2 === 0 && t > .7 && t < .82) c = mix(cl, '#ffffff', .2);
+  } else if (v < peak && u > .08 && u < .92) {
+    c = S.far; if (v > peak - .05) c = w === 'snow' || S !== SKY.night ? '#eef2f4' : mix(S.far, '#ffffff', .3);
+    if ((X + Y) % 2 === 0 && v > peak - .1 && v <= peak - .05) c = mix(S.far, '#ffffff', .2);
+  } else {
+    c = skyAt(u, v, X, Y, tw, th, S, w, top);
+    if (S.moon && w !== 'cloudy' && w !== 'rain' && w !== 'fog' && h1 > .94 && h1 <= .965) c = '#bcc4e0';
+    const bandY = .78 + .04 * Math.sin(sx * 2.4 + HOUR() % 5);
+    if (v > bandY - .03 && v < bandY + .03 && Math.sin(sx * 3.1 + 1) > .1) c = mix(c, cl, .55);
+  }
+  if (w === 'fog') c = mix(c, cl, v < top + .15 ? .55 : .2);
+  return weatherAt(c, u, v, X, Y, tw, th, w === 'fog' ? 'clear' : w, top);
+}
+const VIEWS = { window: viewPix, sea: viewSea, cloud: viewCloud };
+
 export function makeRoom(N, defs) {
   const O = { x: N * TW / 2 + PAD, y: WALLH + PAD + 4 };
   const W = N * TW + PAD * 2, H = O.y + N * TH + 12;
@@ -133,7 +208,7 @@ export function makeRoom(N, defs) {
     const [u0, u1] = p.su || [0, 1], tw = Math.round(cols / Math.max(.01, u1 - u0));
     for (let c = 0; c < cols; c++) {
       const f = (c + .5) / cols, [bx, by] = along ? iso(x + f * p.w, y + p.d, z) : iso(x + p.w, y + (1 - f) * p.d, z), u = u0 + f * (u1 - u0);
-      for (let r = 0; r < rows; r++) { const col = viewPix(u, (r + .5) / rows, Math.floor(u * tw), r, tw, rows, env); if (col) put(layer, Math.round(bx - .5), Math.floor(by) - r - 1, along ? P(col) : sh(col, .86)); }
+      for (let r = 0; r < rows; r++) { const ex = (f - .5) * 2, ey = ((r + .5) / rows - .5) * 2, dd = Math.hypot(ex, ey); if (p.round && dd > 1) continue; const ang = Math.atan2(ey, ex), rv = Math.abs((((ang / (Math.PI / 6)) % 1) + 1) % 1 - .5) < .14; const col = p.ring && dd > p.ringIn ? (rv && dd > (p.ringIn + 1) / 2 ? p.rivet || '#f0c868' : ey > .3 ? mix(p.ring, '#000000', .2) : p.ring) : (VIEWS[p.view] || viewPix)(u, (r + .5) / rows, Math.floor(u * tw), r, tw, rows, env); if (col) put(layer, Math.round(bx - .5), Math.floor(by) - r - 1, along ? P(col) : sh(col, .86)); }
     }
   }
   const wallPoly = (side, t, z, w, h) => side === 'R' ? [iso(t, 0, z), iso(t + w, 0, z), iso(t + w, 0, z + h), iso(t, 0, z + h)] : [iso(0, t, z), iso(0, t + w, z), iso(0, t + w, z + h), iso(0, t, z + h)];
