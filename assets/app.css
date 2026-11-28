@@ -2194,6 +2194,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 .rank-ladder li.now { color: var(--text); border-color: var(--fc); background: color-mix(in srgb, var(--fc) 16%, var(--surface)); font-weight: 650; }
 .fq-card { display: grid; gap: 6px; padding: 10px 12px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); }
 .fq-card.ready { border-color: var(--accent); }
+.fq-past { margin-top: 8px; } .fq-past summary { cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: calc(13px * var(--fz, 1)); padding: 4px 0; } .fq-past .btn-row { flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .fq-card p { margin: 0; }
 .fq-tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: calc(12.5px * var(--fz, 1)); }
 .fq-tasks li { display: flex; gap: 6px; align-items: center; } .fq-tasks li span { flex: 1; min-width: 0; } .fq-tasks li small { color: var(--muted); font-variant-numeric: tabular-nums; }

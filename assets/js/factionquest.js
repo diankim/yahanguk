@@ -1,4 +1,4 @@
-import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf, store, josa, particle, JOBS } from './core.js';
+import { act, rpc, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf, store, josa, particle, JOBS } from './core.js';
 import { brokenName, FACTION_DONATE } from './rules.js';
 import { openItemInfo } from './views/item.js';
 import { chip, invalidate, rarRow } from './views/common.js';
@@ -94,11 +94,15 @@ export function fqPopHtml(key, s) {
           <button class="btn ${q.ready ? 'primary' : ''}" data-here="세력 퀘스트 보고" data-fq-report ${q.ready ? '' : 'disabled'}>${icon('scroll', 16)}<span>${q.ready ? (q.tasks?.length ? '보고하기' : '대화하기') : '아직 할 일이 남았습니다'}</span></button>
           ${q.tasks?.length ? `<p class="muted small">할 일은 이 장면이 열린 뒤부터 셉니다.</p>` : ''}</div>`
         : `<p class="desc">${icon('check', 14)} 모든 등급 퀘스트를 마쳤습니다.</p>`;
+    const jd = s.join_done ? 3 : Math.max(0, Math.min(3, Number(s.join_step) || 0)), rd = s.join_done ? rk : 1;
+    const past = [...Array.from({ length: jd }, (_, i) => ['join', i + 1, `가입 ${i + 1}/3`]), ...Array.from({ length: Math.max(0, rd - 1) }, (_, i) => ['rank', i + 2, ranks[i + 1] || `${i + 2}등급`])];
+    const pastHtml = past.length ? `<details class="fq-past"><summary>${icon('scroll', 14)} 지난 장면 다시 보기 <small class="muted">${past.length}</small></summary>
+      <div class="btn-row">${past.map(([k, n, t]) => `<button class="btn small ghost" type="button" data-fq-past="${k}:${n}">${esc(t)}</button>`).join('')}</div></details>` : '';
     return `${ladder}
       <div class="chips">${chip(`평판 ${fmt.num(s.rep)}`, 'accent')}${chip(`공훈 ${fmt.num(s.merit)}`, 'ok')}${s.next ? chip(`다음 등급 · 평판 ${fmt.num(s.next.rep)} · Lv${s.next.level}`) : chip('최고 등급')}</div>
       <p class="small">${perk ? (rk > 1 ? `등급 효과 · 지금 ${esc(perk(rk))}${rk < 5 ? ` (최고 등급 ${esc(perk(5))})` : ''}` : `등급 효과는 2등급부터 붙습니다(최고 등급 ${esc(perk(5))})`) : ''} · 등급이 오를수록 비고 품목이 늘어납니다.</p>
       <label class="check"><input type="checkbox" id="fq-show" ${s.show_rank ? 'checked' : ''} ${s.join_done ? '' : 'disabled'}><span>프로필·조사원 카드에 세력 등급 보이기</span></label>
-      <h3 class="sub-h">${s.join_done ? '등급 퀘스트' : '가입 퀘스트'}</h3>${questHtml}
+      <h3 class="sub-h">${s.join_done ? '등급 퀘스트' : '가입 퀘스트'}</h3>${questHtml}${pastHtml}
       <p class="muted small">평판은 그 세력 일로 쌓이는 누적 값(등급 기준)이고, 공훈은 의뢰판·퀘스트로 모아 비고에서 쓰는 몫입니다. 공훈을 써도 평판은 줄지 않습니다.</p>`;
   }
   if (key === 'reqs') {
@@ -138,6 +142,11 @@ export function fqPopHtml(key, s) {
 export function bindFaction(body, s) {
   $$('[data-fq-report]', body).forEach(b => b.onclick = () => guard(b, async () => {
     const r = await act('world_faction_report');
+    playDialogue(r, s.faction_id); return null;
+  }));
+  $$('[data-fq-past]', body).forEach(b => b.onclick = () => guard(b, async () => {
+    const [k, n] = b.dataset.fqPast.split(':');
+    const r = await rpc('world_faction_scene_view', { p_kind: k, p_step: Number(n) });
     playDialogue(r, s.faction_id); return null;
   }));
   $$('[data-fq-req]', body).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_faction_request_claim', { p_req: b.dataset.fqReq }); return r; }));
